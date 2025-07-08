@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Energia Limpa</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      overflow-x: hidden;
+    }
+
+    .header {
+      text-align: center;
+      padding: 2rem;
+      border-bottom: 1px solid #333;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      color: #0f0;
+      text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+      margin-bottom: 1rem;
+    }
+
+    .header p {
+      color: #999;
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1rem;
+    }
+
+    .energy-flow {
+      position: relative;
+      margin-bottom: 3rem;
+    }
+
+    .flow-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, #0f0, transparent);
+      opacity: 0.5;
+    }
+
+    .components {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .component {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+    }
+
+    .component h3 {
+      color: #0f0;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .component-subtitle {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .bicycle {
+      position: relative;
+      width: 140px;
+      height: 100px;
+      margin: 0 auto 1rem;
+    }
+
+    .bicycle svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .wheel {
+      width: 35px;
+      height: 35px;
+      border: 2px solid #0f0;
+      border-radius: 50%;
+      position: absolute;
+      bottom: 0;
+      background: rgba(0, 255, 0, 0.05);
+    }
+
+    .wheel.front { right: 10px; }
+    .wheel.rear { left: 10px; }
+
+    .wheel.spinning {
+      animation: spin 1s linear infinite;
+    }
+
+    .spokes {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+    }
+
+    .spoke {
+      position: absolute;
+      background: #0f0;
+      top: 50%;
+      left: 50%;
+      transform-origin: center;
+    }
+
+    .spoke.vertical { width: 1px; height: 28px; transform: translate(-50%, -50%); }
+    .spoke.horizontal { width: 28px; height: 1px; transform: translate(-50%, -50%); }
+    .spoke.diagonal1 { width: 1px; height: 20px; transform: translate(-50%, -50%) rotate(45deg); }
+    .spoke.diagonal2 { width: 20px; height: 1px; transform: translate(-50%, -50%) rotate(45deg); }
+
+    .hub {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      background: #0f0;
+      border-radius: 50%;
+    }
+
+    .pedals {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+    }
+
+    .pedals.spinning {
+      animation: spin 2s linear infinite;
+    }
+
+    .crank {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+    }
+
+    .crank-arm {
+      position: absolute;
+      background: #0f0;
+      top: 50%;
+      left: 50%;
+      transform-origin: center;
+    }
+
+    .crank-arm.vertical { width: 1px; height: 18px; transform: translate(-50%, -50%); }
+    .crank-arm.horizontal { width: 18px; height: 1px; transform: translate(-50%, -50%); }
+
+    .pedal {
+      position: absolute;
+      width: 8px;
+      height: 3px;
+      background: #0f0;
+      border-radius: 2px;
+    }
+
+    .pedal.left { top: -2px; left: -2px; }
+    .pedal.right { bottom: -2px; right: -2px; }
+
+    .motor {
+      width: 60px;
+      height: 60px;
+      background: #222;
+      border: 2px solid #0f0;
+      border-radius: 8px;
+      margin: 0 auto 1rem;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
+
+    .rotor {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 30px;
+      height: 30px;
+      border: 2px solid #0f0;
+      border-radius: 50%;
+      background: #111;
+    }
+
+    .rotor.spinning {
+      animation: spin 0.8s linear infinite;
+    }
+
+    .rotor-spoke {
+      position: absolute;
+      background: #0f0;
+      top: 50%;
+      left: 50%;
+      transform-origin: center;
+    }
+
+    .rotor-spoke.vertical { width: 1px; height: 20px; transform: translate(-50%, -50%); }
+    .rotor-spoke.horizontal { width: 20px; height: 1px; transform: translate(-50%, -50%); }
+
+    .battery {
+      width: 50px;
+      height: 80px;
+      border: 2px solid #0f0;
+      background: #111;
+      margin: 0 auto 1rem;
+      position: relative;
+      border-radius: 4px;
+    }
+
+    .battery-terminal {
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 6px;
+      background: #0f0;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .battery-charge {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, #0f0, #4f4);
+      border-radius: 0 0 2px 2px;
+      transition: height 0.3s ease;
+      height: 0%;
+    }
+
+    .battery-segments {
+      position: absolute;
+      top: 10px;
+      left: 8px;
+      right: 8px;
+      bottom: 10px;
+    }
+
+    .battery-segment {
+      height: 2px;
+      border-top: 1px solid #333;
+      margin-bottom: 8px;
+    }
+
+    .led {
+      width: 50px;
+      height: 50px;
+      border: 2px solid #0f0;
+      border-radius: 50%;
+      background: #666;
+      margin: 0 auto 1rem;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .led.on {
+      background: #0f0;
+      box-shadow: 0 0 20px #0f0, 0 0 40px #0f0;
+    }
+
+    .led-reflection {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 12px;
+      height: 12px;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.2;
+    }
+
+    .controls {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .controls h3 {
+      color: #0f0;
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-start {
+      background: #0f0;
+      color: #000;
+    }
+
+    .btn-start:hover:not(:disabled) {
+      background: #0c0;
+      transform: scale(1.05);
+    }
+
+    .btn-start:disabled {
+      background: rgba(0, 255, 0, 0.3);
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-stop {
+      background: #f00;
+      color: #fff;
+    }
+
+    .btn-stop:hover:not(:disabled) {
+      background: #c00;
+      transform: scale(1.05);
+    }
+
+    .btn-stop:disabled {
+      background: rgba(255, 0, 0, 0.3);
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+
+    .stat {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      color: #0f0;
+      font-size: 1.5rem;
+      font-weight: bold;
+      font-family: monospace;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .components {
+        grid-template-columns: 1fr;
+      }
+      
+      .buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .btn {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>Simulador de Energia Limpa</h1>
+    <p>Explore como a energia mecânica é convertida em energia elétrica através desta simulação interativa</p>
+  </header>
+
+  <div class="container">
+    <div class="energy-flow">
+      <div class="flow-line"></div>
+      
+      <div class="components">
+        <!-- Bicicleta -->
+        <div class="component">
+          <h3>Bicicleta</h3>
+          <p class="component-subtitle">Geração de Energia</p>
+          
+          <div class="bicycle">
+            <svg viewBox="0 0 140 100">
+              <!-- Frame -->
+              <line x1="35" y1="20" x2="85" y2="35" stroke="#0f0" stroke-width="2"/>
+              <line x1="35" y1="20" x2="35" y2="65" stroke="#0f0" stroke-width="2"/>
+              <line x1="35" y1="65" x2="85" y2="35" stroke="#0f0" stroke-width="2"/>
+              <line x1="35" y1="65" x2="105" y2="65" stroke="#0f0" stroke-width="2"/>
+              <line x1="35" y1="20" x2="105" y2="65" stroke="#0f0" stroke-width="2"/>
+              <line x1="85" y1="35" x2="95" y2="20" stroke="#0f0" stroke-width="2"/>
+              <line x1="95" y1="20" x2="105" y2="65" stroke="#0f0" stroke-width="2"/>
+              
+              <!-- Seat -->
+              <rect x="25" y="15" width="20" height="6" rx="3" fill="#0f0"/>
+              
+              <!-- Handlebars -->
+              <rect x="90" y="17" width="16" height="2" rx="1" fill="#0f0"/>
+              <rect x="97" y="17" width="2" height="8" rx="1" fill="#0f0"/>
+              
+              <!-- Chain -->
+              <line x1="45" y1="60" x2="85" y2="60" stroke="#0f0" stroke-width="1" opacity="0.6"/>
+            </svg>
+            
+            <!-- Wheels -->
+            <div class="wheel rear" id="rearWheel">
+              <div class="spokes">
+                <div class="spoke vertical"></div>
+                <div class="spoke horizontal"></div>
+                <div class="spoke diagonal1"></div>
+                <div class="spoke diagonal2"></div>
+              </div>
+              <div class="hub"></div>
+            </div>
+            
+            <div class="wheel front" id="frontWheel">
+              <div class="spokes">
+                <div class="spoke vertical"></div>
+                <div class="spoke horizontal"></div>
+                <div class="spoke diagonal1"></div>
+                <div class="spoke diagonal2"></div>
+              </div>
+              <div class="hub"></div>
+            </div>
+            
+            <!-- Pedals -->
+            <div class="pedals" id="pedals">
+              <div class="crank">
+                <div class="crank-arm vertical"></div>
+                <div class="crank-arm horizontal"></div>
+              </div>
+              <div class="pedal left"></div>
+              <div class="pedal right"></div>
+            </div>
+          </div>
+          
+          <div class="stat">
+            <div class="stat-label">Potência</div>
+            <div class="stat-value" id="power">0W</div>
+          </div>
+        </div>
+
+        <!-- Motor -->
+        <div class="component">
+          <h3>Gerador</h3>
+          <p class="component-subtitle">Conversão de Energia</p>
+          
+          <div class="motor">
+            <div class="rotor" id="rotor">
+              <div class="rotor-spoke vertical"></div>
+              <div class="rotor-spoke horizontal"></div>
+            </div>
+          </div>
+          
+          <div class="stat">
+            <div class="stat-label">Eficiência</div>
+            <div class="stat-value">85%</div>
+          </div>
+        </div>
+
+        <!-- Bateria -->
+        <div class="component">
+          <h3>Bateria</h3>
+          <p class="component-subtitle">Armazenamento</p>
+          
+          <div class="battery">
+            <div class="battery-terminal"></div>
+            <div class="battery-charge" id="batteryCharge"></div>
+            <div class="battery-segments">
+              <div class="battery-segment"></div>
+              <div class="battery-segment"></div>
+              <div class="battery-segment"></div>
+              <div class="battery-segment"></div>
+            </div>
+          </div>
+          
+          <div class="stat">
+            <div class="stat-label">Carga</div>
+            <div class="stat-value" id="batteryLevel">0%</div>
+          </div>
+        </div>
+
+        <!-- LED -->
+        <div class="component">
+          <h3>LED</h3>
+          <p class="component-subtitle">Indicador</p>
+          
+          <div class="led" id="led">
+            <div class="led-reflection"></div>
+          </div>
+          
+          <div class="stat">
+            <div class="stat-label">Status</div>
+            <div class="stat-value" id="ledStatus">Desligado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <h3>Controles do Simulador</h3>
+      
+      <div class="buttons">
+        <button class="btn btn-start" id="startBtn" onclick="startSimulation()">
+          ▶ Iniciar Pedalada
+        </button>
+        <button class="btn btn-stop" id="stopBtn" onclick="stopSimulation()" disabled>
+          ■ Parar Simulação
+        </button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Energia Gerada</div>
+          <div class="stat-value" id="energyGenerated">0.0 Wh</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Tempo Ativo</div>
+          <div class="stat-value" id="activeTime">00:00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Velocidade</div>
+          <div class="stat-value" id="pedalSpeed">0 RPM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isRunning = false;
+    let batteryLevel = 0;
+    let energyGenerated = 0;
+    let startTime = 0;
+    let animationInterval;
+    let updateInterval;
+
+    function updateDisplay() {
+      // Atualizar bateria
+      document.getElementById('batteryCharge').style.height = batteryLevel + '%';
+      document.getElementById('batteryLevel').textContent = Math.round(batteryLevel) + '%';
+      
+      // Atualizar LED
+      const led = document.getElementById('led');
+      const ledStatus = document.getElementById('ledStatus');
+      if (batteryLevel >= 10) {
+        led.classList.add('on');
+        ledStatus.textContent = 'Ligado';
+        ledStatus.style.color = '#0f0';
+      } else {
+        led.classList.remove('on');
+        ledStatus.textContent = 'Desligado';
+        ledStatus.style.color = '#666';
+      }
+      
+      // Atualizar energia gerada
+      document.getElementById('energyGenerated').textContent = energyGenerated.toFixed(1) + ' Wh';
+      
+      // Atualizar tempo ativo
+      if (isRunning) {
+        const activeSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(activeSeconds / 60);
+        const seconds = activeSeconds % 60;
+        document.getElementById('activeTime').textContent = 
+          minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+        
+        // Atualizar potência e velocidade
+        const power = Math.floor(75 + Math.random() * 50);
+        const speed = Math.floor(60 + Math.random() * 30);
+        document.getElementById('power').textContent = power + 'W';
+        document.getElementById('pedalSpeed').textContent = speed + ' RPM';
+      } else {
+        document.getElementById('power').textContent = '0W';
+        document.getElementById('pedalSpeed').textContent = '0 RPM';
+      }
+    }
+
+    function startSimulation() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      startTime = Date.now();
+      
+      // Ativar animações
+      document.getElementById('rearWheel').classList.add('spinning');
+      document.getElementById('frontWheel').classList.add('spinning');
+      document.getElementById('pedals').classList.add('spinning');
+      document.getElementById('rotor').classList.add('spinning');
+      
+      // Atualizar botões
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = false;
+      
+      // Iniciar loop de atualização
+      updateInterval = setInterval(() => {
+        if (batteryLevel < 100) {
+          batteryLevel = Math.min(100, batteryLevel + 0.5);
+        }
+        energyGenerated += 0.1;
+        updateDisplay();
+      }, 200);
+    }
+
+    function stopSimulation() {
+      if (!isRunning) return;
+      
+      isRunning = false;
+      
+      // Desativar animações
+      document.getElementById('rearWheel').classList.remove('spinning');
+      document.getElementById('frontWheel').classList.remove('spinning');
+      document.getElementById('pedals').classList.remove('spinning');
+      document.getElementById('rotor').classList.remove('spinning');
+      
+      // Atualizar botões
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+      
+      // Parar loop de atualização
+      clearInterval(updateInterval);
+      
+      // Iniciar descarga da bateria
+      const dischargeInterval = setInterval(() => {
+        if (batteryLevel > 0) {
+          batteryLevel = Math.max(0, batteryLevel - 0.1);
+          updateDisplay();
+        } else {
+          clearInterval(dischargeInterval);
+        }
+      }, 100);
+    }
+
+    // Inicializar display
+    updateDisplay();
+  </script>
+</body>
+</html>
